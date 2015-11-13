@@ -46,6 +46,10 @@ impl VPair {
         }
     }
 
+    pub fn is_complete(&self) -> bool {
+        self.data.len() == 1 && self.used == 0
+    }
+
     pub fn apply(&self, p: &SPair) -> Option<VPair> {
         let (mut lead, mut follow) = match self.leading {
             Top => (p.a, p.b),
@@ -61,9 +65,9 @@ impl VPair {
             MatchRemaining => {
                 let mut head2 = self.head2();
 
-                match self.head2().apply(&mut follow, &mut lead) {
+                match head2.apply(&mut follow, &mut lead) {
                     Mismatch => None,
-                    Match => Some(self.with_offset_prefix_and_add_lead(1, head.prefix, lead)),
+                    Match => Some(self.with_offset_prefix_and_add_lead(1, head2.prefix, lead)),
                     LeadSwitch => Some(self.switched_with_new_lead(follow)),
                     MatchRemaining => unreachable!("SPairs contain at most 56 bit, which always fit in 64 bit"),
                 }
@@ -111,12 +115,17 @@ impl VPair {
             *last |= lead.shift_data(pushable) << self.used;
         }
 
-        if lead.len() == 0 {
-            self.used += pushable;
+        let new_used = self.used + pushable;
+
+        // if new_used is 64 need to open a new block
+        if lead.len() == 0 && new_used < 64 {
+            self.used = new_used;
         } else {
             self.data.push(lead.data());
             self.used = lead.len();
         }
+
+        debug_assert!(self.used != 64);
     }
 
     fn head(&self) -> VHead {
