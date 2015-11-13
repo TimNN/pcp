@@ -29,7 +29,6 @@ struct Problem {
 impl Problem {
     fn solve(&self, max_depth: u32) {
         let mut depth = 0;
-        let mut max_set_size = 0;
 
         let mut current_working_set = Vec::new();
         let mut next_working_set = Vec::new();
@@ -38,14 +37,12 @@ impl Problem {
 
         while depth <= max_depth {
             println!("Now at depth {}", depth);
-            max_set_size = cmp::max(max_set_size, current_working_set.len());
 
             for e in current_working_set.iter() {
                 for p in self.pairs.iter() {
                     if let Some(ne) = e.apply(p) {
                         if ne.is_complete() {
                             println!("success!");
-                            println!("max set: {}", max_set_size);
                             return;
                         }
 
