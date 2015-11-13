@@ -16,7 +16,7 @@ pub struct SPair {
 }
 
 /// A variable length pair.
-#[derive(Clone)]
+#[derive(Copy, Clone)]
 pub struct VPair {
     data: [u64; BCNT_],
     /// Who is leading.
@@ -166,6 +166,7 @@ impl VPair {
     }
 }
 
+#[derive(Copy, Clone)]
 enum ApplyResult {
     /// No match
     Mismatch,
