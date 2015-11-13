@@ -1,4 +1,3 @@
-#![feature(vec_push_all)]
 
 use std::{cmp, mem};
 
