@@ -1,7 +1,10 @@
-use std::cmp;
+use std::{cmp, ptr};
 
 use self::ApplyResult::*;
 use super::Leading::{self, Top, Bot};
+
+const BCNT: u8 = 5;
+const BCNT_: usize = BCNT as usize;
 
 #[derive(Copy, Clone)]
 struct SPart(u64);
@@ -15,13 +18,15 @@ pub struct SPair {
 /// A variable length pair.
 #[derive(Clone)]
 pub struct VPair {
-    data: Vec<u64>,
+    data: [u64; BCNT_],
     /// Who is leading.
     leading: Leading,
     /// How many bits of the first block are shared.
     prefix: u8,
     /// How many bits of the last block are used.
     used: u8,
+    /// which block is last used one
+    tail: u8,
 }
 
 #[derive(Copy, Clone)]
@@ -35,19 +40,21 @@ struct VHead {
 
 impl VPair {
     pub fn new() -> VPair {
-        let mut v = Vec::with_capacity(1);
-        v.push(0);
-
         VPair {
-            data: v,
+            data: [0; BCNT_],
             prefix: 0,
             used: 0,
             leading: Top,
+            tail: 0,
         }
     }
 
+    pub fn len(&self) -> usize {
+        self.tail as usize + 1
+    }
+
     pub fn is_complete(&self) -> bool {
-        self.data.len() == 1 && self.used == 0
+        self.tail == 0 && self.used == 0
     }
 
     pub fn apply(&self, p: &SPair) -> Option<VPair> {
@@ -75,17 +82,19 @@ impl VPair {
         }
     }
 
-    fn with_offset_prefix_and_add_lead(&self, offset: usize, prefix: u8, lead: SPart) -> VPair {
-        // Reserve an additional block in case apply_lead spills over
-        let mut v = Vec::with_capacity(self.data.len() + 1 - offset);
-        v.push_all(&self.data[offset..]);
-
+    fn with_offset_prefix_and_add_lead(&self, offset: u8, prefix: u8, lead: SPart) -> VPair {
         let mut p = VPair {
-            data: v,
+            data: [0; BCNT_],
             prefix: prefix,
             used: self.used,
             leading: self.leading,
+            tail: self.tail - offset
         };
+
+        unsafe {
+            ptr::copy_nonoverlapping(&self.data[offset as usize], &mut p.data[0], BCNT_ - offset as usize)
+
+        }
 
         p.apply_lead(lead);
 
@@ -93,22 +102,24 @@ impl VPair {
     }
 
     fn switched_with_new_lead(&self, lead: SPart) -> VPair {
-        let mut v = Vec::with_capacity(1);
-        v.push(lead.data());
-
-        VPair {
-            data: v,
+        let mut p = VPair {
+            data: [0; BCNT_],
             prefix: 0,
             used: lead.len(),
             leading: self.leading.switched(),
-        }
+            tail: 0,
+        };
+
+        p.data[0] = lead.data();
+
+        p
     }
 
     fn apply_lead(&mut self, mut lead: SPart) {
         let pushable;
 
         { // make the borrowchecker happy
-            let last = self.data.last_mut().unwrap();
+            let last = &mut self.data[self.tail as usize];
 
             // push all we can into the current byte
             pushable = cmp::min(64 - self.used, lead.len());
@@ -121,11 +132,17 @@ impl VPair {
         if lead.len() == 0 && new_used < 64 {
             self.used = new_used;
         } else {
-            self.data.push(lead.data());
+            self.push(lead.data());
             self.used = lead.len();
         }
 
         debug_assert!(self.used != 64);
+    }
+
+    fn push(&mut self, block: u64) {
+        assert!(self.tail + 1 < BCNT, "lead too long, increase BCNT");
+        self.tail += 1;
+        self.data[self.tail as usize] = block;
     }
 
     fn head(&self) -> VHead {
@@ -134,17 +151,17 @@ impl VPair {
         VHead {
             data: self.data[0],
             prefix: self.prefix,
-            used: if self.data.len() > 1 { 64 } else { self.used },
+            used: if self.tail > 0 { 64 } else { self.used },
         }
     }
 
     fn head2(&self) -> VHead {
-        debug_assert!(self.data.len() > 1);
+        debug_assert!(self.tail > 0);
 
         VHead {
             data: self.data[1],
             prefix: 0,
-            used: if self.data.len() > 2 { 64 } else { self. used },
+            used: if self.tail > 1 { 64 } else { self. used },
         }
     }
 }
