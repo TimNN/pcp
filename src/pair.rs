@@ -222,3 +222,34 @@ impl VHead {
 fn mask(cnt: u8) -> u64 {
     (1 << cnt) - 1
 }
+
+impl<'a> From<&'a str> for SPart {
+    fn from(s: &'a str) -> SPart {
+        let mut val = 0u64;
+        let mut len = 0u64;
+
+        for b in s.bytes().rev() {
+            len += 1;
+            val <<= 1;
+
+            match b {
+                b'0' => (),
+                b'1' => val |= 1,
+                _ => panic!("invalid input byte: {}", b),
+            }
+        }
+
+        assert!(len <= 56, "invalid input: too long");
+
+        SPart((len << 56) | val)
+    }
+}
+
+impl<'a> From<(&'a str, &'a str)> for SPair {
+    fn from((a, b): (&'a str, &'a str)) -> SPair {
+        SPair {
+            a: a.into(),
+            b: b.into(),
+        }
+    }
+}
