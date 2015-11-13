@@ -208,9 +208,6 @@ impl VHead {
         self.prefix += overlap;
         follow.shift(overlap);
 
-        // follow.len() == 0 implies self.prefix == self.used
-        // debug_assert!(follow.len() != 0 || self.prefix == self.used)
-
         if self.prefix == 64 {
             debug_assert!(self.used == 64);
             return MatchRemaining; // Reached the end of block, needs to be removed
