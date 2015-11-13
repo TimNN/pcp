@@ -1,0 +1,7 @@
+[package]
+authors = ["Tim Neumann <mail@timnn.me>"]
+name = "pcp"
+version = "0.1.0"
+
+[profile.release]
+lto = true
