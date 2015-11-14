@@ -1,7 +1,12 @@
-#![feature(alloc, drain, heap_api, oom, unique)]
+#![feature(alloc, heap_api, mutex_get_mut, oom, unique)]
 extern crate alloc;
+extern crate scoped_threadpool;
+
+use scoped_threadpool::Pool;
 
 use std::{cmp, mem};
+use std::sync::Mutex;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use self::chunk_vec::{ChunkVec, Chunk};
 use self::pair::*;
@@ -37,10 +42,14 @@ struct State {
 
 impl Problem {
     fn solve(&self, max_depth: u32) {
+        let thread_cnt = 4;
+
         let mut depth = 0;
 
+        let mut pool = Pool::new(thread_cnt);
+
         let mut current_working_set: Vec<Chunk<State>> = Vec::new();
-        let mut next_working_set = Vec::new();
+        let next_working_set = Vec::new();
         let mut chunks = ChunkVec::new();
 
         let mut w = chunks.get().writer();
@@ -51,48 +60,67 @@ impl Problem {
 
         current_working_set.push(w.into());
 
-        while depth <= max_depth {
+        let mut current_working_set = Mutex::new(current_working_set);
+        let mut next_working_set = Mutex::new(next_working_set);
+        let chunks = Mutex::new(chunks);
+
+        let success = AtomicBool::new(false);
+
+        while depth <= max_depth && !success.load(Ordering::Acquire) {
             println!("Now at depth {}", depth);
 
-            let mut write = chunks.get().writer();
+            pool.scoped(|scope| {
+                for _ in 0 .. thread_cnt {
+                    scope.execute(|| {
+                        let mut write = with_lock(&chunks, |c| c.get().writer());
 
-            for chunk in current_working_set.drain(..) {
-                for state in chunk.iter() {
-                    for (id, pair) in self.pairs.iter().enumerate() {
-                        if let Some(new_pair) = state.pair.apply(pair) {
-                            let new_state = State {
-                                pair: new_pair,
-                                sum: state.sum + id as u32 + 1,
-                            };
+                        while let Some(chunk) = with_lock(&current_working_set, |cws| cws.pop()) {
+                            for state in chunk.iter() {
+                                for (id, pair) in self.pairs.iter().enumerate() {
+                                    if let Some(new_pair) = state.pair.apply(pair) {
+                                        let new_state = State {
+                                            pair: new_pair,
+                                            sum: state.sum + id as u32 + 1,
+                                        };
 
-                            if new_state.pair.is_complete() {
-                                println!("success! n: {}, s: {}", depth + 1, new_state.sum);
-                                return;
-                            }
+                                        if new_state.pair.is_complete() {
+                                            println!("success! n: {}, s: {}", depth + 1, new_state.sum);
+                                            success.store(true, Ordering::Release)
+                                        }
 
-                            match write.push(new_state) {
-                                Ok(()) => (),
-                                Err(ns) => {
-                                    next_working_set.push(write.into());
-                                    write = chunks.get_with(ns).writer();
+                                        match write.push(new_state) {
+                                            Ok(()) => (),
+                                            Err(ns) => {
+                                                with_lock(&next_working_set, |nws| nws.push(write.into()));
+                                                write = with_lock(&chunks, |c| c.get_with(ns).writer());
+                                            }
+                                        }
+                                    }
                                 }
                             }
+
+                            with_lock(&chunks, |c| c.offer(chunk));
                         }
-                    }
+
+                        with_lock(&next_working_set, |nws| nws.push(write.into()));
+                    })
                 }
+            });
 
-                chunks.offer(chunk);
-            }
-
-            next_working_set.push(write.into());
-
-            mem::swap(&mut current_working_set, &mut next_working_set);
-            assert!(next_working_set.is_empty());
+            mem::swap(current_working_set.get_mut().unwrap(), next_working_set.get_mut().unwrap());
+            assert!(next_working_set.lock().unwrap().is_empty());
 
             depth += 1;
         }
-        println!("no success");
+
+        if !success.load(Ordering::Acquire) {
+            println!("no success");
+        }
     }
+}
+
+fn with_lock<T, R, F: FnOnce(&mut T) -> R>(mutex: &Mutex<T>, f: F) -> R {
+    f(&mut*mutex.lock().unwrap())
 }
 
 fn main() {

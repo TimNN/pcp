@@ -3,6 +3,11 @@ authors = ["Tim Neumann <mail@timnn.me>"]
 name = "pcp"
 version = "0.1.0"
 
+[dependencies]
+scoped_threadpool = "0.1.6"
+
+[profile]
+
 [profile.release]
-lto = true
 debug = true
+lto = true
