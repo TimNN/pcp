@@ -1,5 +1,6 @@
 #![feature(alloc, heap_api, mutex_get_mut, oom, unique)]
 extern crate alloc;
+extern crate num_cpus;
 extern crate scoped_threadpool;
 
 use scoped_threadpool::Pool;
@@ -42,7 +43,8 @@ struct State {
 
 impl Problem {
     fn solve(&self, max_depth: u32) {
-        let thread_cnt = 4;
+        let thread_cnt = num_cpus::get() as u32;
+        println!("Running with {} threads", thread_cnt);
 
         let mut depth = 0;
 
