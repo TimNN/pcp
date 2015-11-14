@@ -3,11 +3,17 @@ use std::{cmp, ptr};
 use self::ApplyResult::*;
 use super::Leading::{self, Top, Bot};
 
+type blk = u64;
 const BCNT: u8 = 5;
+const BLK_BITS: u8 = 64;
+
 const BCNT_: usize = BCNT as usize;
+const VAL_BITS: u8 = BLK_BITS - 8;
+const VAL_MASK: blk = (1 << VAL_BITS) - 1;
+
 
 #[derive(Copy, Clone)]
-struct SPart(u64);
+struct SPart(blk);
 
 #[derive(Copy, Clone)]
 pub struct SPair {
@@ -18,7 +24,7 @@ pub struct SPair {
 /// A variable length pair.
 #[derive(Copy, Clone)]
 pub struct VPair {
-    data: [u64; BCNT_],
+    data: [blk; BCNT_],
     /// Who is leading.
     leading: Leading,
     /// How many bits of the first block are shared.
@@ -31,7 +37,7 @@ pub struct VPair {
 
 #[derive(Copy, Clone)]
 struct VHead {
-    data: u64,
+    data: blk,
     /// How many bits are shared
     prefix: u8,
     /// How many bits are used
@@ -76,7 +82,7 @@ impl VPair {
                     Mismatch => None,
                     Match => Some(self.with_offset_prefix_and_add_lead(1, head2.prefix, lead)),
                     LeadSwitch => Some(self.switched_with_new_lead(follow)),
-                    MatchRemaining => unreachable!("SPairs contain at most 56 bit, which always fit in 64 bit"),
+                    MatchRemaining => unreachable!("SPairs contain at most VAL_BITS bit, which always fit in BITS bit"),
                 }
             }
         }
@@ -122,36 +128,36 @@ impl VPair {
             let last = &mut self.data[self.tail as usize];
 
             // push all we can into the current byte
-            pushable = cmp::min(64 - self.used, lead.len());
+            pushable = cmp::min(BLK_BITS - self.used, lead.len());
             *last |= lead.shift_data(pushable) << self.used;
         }
 
         let new_used = self.used + pushable;
 
         // if new_used is 64 need to open a new block
-        if lead.len() == 0 && new_used < 64 {
+        if lead.len() == 0 && new_used < BLK_BITS {
             self.used = new_used;
         } else {
             self.push(lead.data());
             self.used = lead.len();
         }
 
-        debug_assert!(self.used != 64);
+        debug_assert!(self.used != BLK_BITS);
     }
 
-    fn push(&mut self, block: u64) {
+    fn push(&mut self, block: blk) {
         assert!(self.tail + 1 < BCNT, "lead too long, increase BCNT");
         self.tail += 1;
         self.data[self.tail as usize] = block;
     }
 
     fn head(&self) -> VHead {
-        debug_assert!(self.used != 64);
+        debug_assert!(self.used != BLK_BITS);
 
         VHead {
             data: self.data[0],
             prefix: self.prefix,
-            used: if self.tail > 0 { 64 } else { self.used },
+            used: if self.tail > 0 { BLK_BITS } else { self.used },
         }
     }
 
@@ -161,7 +167,7 @@ impl VPair {
         VHead {
             data: self.data[1],
             prefix: 0,
-            used: if self.tail > 1 { 64 } else { self. used },
+            used: if self.tail > 1 { BLK_BITS } else { self. used },
         }
     }
 }
@@ -179,21 +185,21 @@ enum ApplyResult {
 }
 
 impl SPart {
-    fn data(&self) -> u64 {
-        self.0 & 0x00FF_FFFF_FFFF_FFFF
+    fn data(&self) -> blk {
+        self.0 & VAL_MASK
     }
 
     fn len(&self) -> u8 {
-        (self.0 >> 56) as u8
+        (self.0 >> VAL_BITS) as u8
     }
 
     fn shift(&mut self, shift: u8) {
         let new_len = self.len() - shift;
         let new_val = self.data() >> shift;
-        self.0 = ((new_len as u64) << 56) | new_val;
+        self.0 = ((new_len as blk) << VAL_BITS) | new_val;
     }
 
-    fn shift_data(&mut self, shift: u8) -> u64 {
+    fn shift_data(&mut self, shift: u8) -> blk {
         let data = self.0 & mask(shift);
         self.shift(shift);
         data
@@ -226,8 +232,8 @@ impl VHead {
         self.prefix += overlap;
         follow.shift(overlap);
 
-        if self.prefix == 64 {
-            debug_assert!(self.used == 64);
+        if self.prefix == BLK_BITS {
+            debug_assert!(self.used == BLK_BITS);
             return MatchRemaining; // Reached the end of block, needs to be removed
         }
 
@@ -243,14 +249,14 @@ impl VHead {
 }
 
 /// Create a bitmask of which the lower `cnt` bits are set.
-fn mask(cnt: u8) -> u64 {
+fn mask(cnt: u8) -> blk {
     (1 << cnt) - 1
 }
 
 impl<'a> From<&'a str> for SPart {
     fn from(s: &'a str) -> SPart {
-        let mut val = 0u64;
-        let mut len = 0u64;
+        let mut val: blk = 0;
+        let mut len: blk = 0;
 
         for b in s.bytes().rev() {
             len += 1;
@@ -263,9 +269,9 @@ impl<'a> From<&'a str> for SPart {
             }
         }
 
-        assert!(len <= 56, "invalid input: too long");
+        assert!(len <= VAL_BITS as blk, "invalid input: too long");
 
-        SPart((len << 56) | val)
+        SPart((len << VAL_BITS) | val)
     }
 }
 
