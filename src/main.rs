@@ -29,16 +29,25 @@ struct Problem {
     pairs: Box<[SPair]>,
 }
 
+#[derive(Clone, Copy)]
+struct State {
+    pair: VPair,
+    sum: u32,
+}
+
 impl Problem {
     fn solve(&self, max_depth: u32) {
         let mut depth = 0;
 
-        let mut current_working_set: Vec<Chunk<VPair>> = Vec::new();
+        let mut current_working_set: Vec<Chunk<State>> = Vec::new();
         let mut next_working_set = Vec::new();
         let mut chunks = ChunkVec::new();
 
         let mut w = chunks.get().writer();
-        let _ = w.push(VPair::new());
+        let _ = w.push(State{
+            pair: VPair::new(),
+            sum: 0,
+        });
 
         current_working_set.push(w.into());
 
@@ -49,10 +58,15 @@ impl Problem {
 
             for chunk in current_working_set.drain(..) {
                 for state in chunk.iter() {
-                    for pair in self.pairs.iter() {
-                        if let Some(new_state) = state.apply(pair) {
-                            if new_state.is_complete() {
-                                println!("success!");
+                    for (id, pair) in self.pairs.iter().enumerate() {
+                        if let Some(new_pair) = state.pair.apply(pair) {
+                            let new_state = State {
+                                pair: new_pair,
+                                sum: state.sum + id as u32 + 1,
+                            };
+
+                            if new_state.pair.is_complete() {
+                                println!("success! n: {}, s: {}", depth + 1, new_state.sum);
                                 return;
                             }
 
