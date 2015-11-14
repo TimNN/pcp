@@ -3,6 +3,7 @@ use std::{cmp, ptr};
 use self::ApplyResult::*;
 use super::Leading::{self, Top, Bot};
 
+#[allow(non_camel_case_types)]
 type blk = u64;
 const BCNT: u8 = 5;
 const BLK_BITS: u8 = 64;
