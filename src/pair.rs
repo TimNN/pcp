@@ -4,17 +4,17 @@ use self::ApplyResult::*;
 use super::Leading::{self, Top, Bot};
 
 #[allow(non_camel_case_types)]
-type blk = u64;
-const BCNT: u8 = 5;
-const BLK_BITS: u8 = 64;
+pub type blk = u64;
+pub const BCNT: u8 = 5;
+pub const BLK_BITS: u8 = 64;
 
-const BCNT_: usize = BCNT as usize;
-const VAL_BITS: u8 = BLK_BITS - 8;
-const VAL_MASK: blk = (1 << VAL_BITS) - 1;
+pub const BCNT_: usize = BCNT as usize;
+pub const VAL_BITS: u8 = BLK_BITS - 8;
+pub const VAL_MASK: blk = (1 << VAL_BITS) - 1;
 
 
 #[derive(Copy, Clone)]
-struct SPart(blk);
+pub struct SPart(blk);
 
 #[derive(Copy, Clone)]
 pub struct SPair {
@@ -185,7 +185,23 @@ enum ApplyResult {
     LeadSwitch,
 }
 
+impl SPair {
+    pub fn new(a: SPart, b: SPart) -> SPair {
+        SPair {
+            a: a,
+            b: b,
+        }
+    }
+}
+
 impl SPart {
+    pub fn new(len: blk, val: blk) -> SPart {
+        assert!(len <= VAL_BITS as u64);
+        assert!((val & VAL_MASK) == val);
+
+        SPart((len << VAL_BITS) | val)
+    }
+
     fn data(&self) -> blk {
         self.0 & VAL_MASK
     }
@@ -252,35 +268,4 @@ impl VHead {
 /// Create a bitmask of which the lower `cnt` bits are set.
 fn mask(cnt: u8) -> blk {
     (1 << cnt) - 1
-}
-
-impl<'a> From<&'a str> for SPart {
-    fn from(s: &'a str) -> SPart {
-        let mut val: blk = 0;
-        let mut len: blk = 0;
-
-        for b in s.bytes().rev() {
-            len += 1;
-            val <<= 1;
-
-            match b {
-                b'0' => (),
-                b'1' => val |= 1,
-                _ => panic!("invalid input byte: {}", b),
-            }
-        }
-
-        assert!(len <= VAL_BITS as blk, "invalid input: too long");
-
-        SPart((len << VAL_BITS) | val)
-    }
-}
-
-impl<'a> From<(&'a str, &'a str)> for SPair {
-    fn from((a, b): (&'a str, &'a str)) -> SPair {
-        SPair {
-            a: a.into(),
-            b: b.into(),
-        }
-    }
 }
