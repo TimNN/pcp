@@ -17,7 +17,7 @@ pub struct IPair {
 
 pub struct Config {
     pub pairs: Box<[IPair]>,
-    pub max_iter: u32,
+    pub max_iter: usize,
     pub thread_cnt: u32,
 }
 
@@ -38,8 +38,8 @@ impl Config {
         };
 
         let max_iter = matches.value_of("max_iter")
-            .map(|i| u32::from_str(i).expect("Invalid value for -n"))
-            .unwrap_or(u32::max_value());
+            .map(|i| usize::from_str(i).expect("Invalid value for -n"))
+            .unwrap_or(usize::max_value());
 
         Config {
             pairs: pairs,

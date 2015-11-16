@@ -7,7 +7,14 @@ version = "0.1.0"
 clap = "1.5.2"
 libc = "0.2.2"
 num_cpus = "0.2.7"
+quickersort = "1.0.0"
 scoped_threadpool = "0.1.6"
+time = "0.1.34"
+
+[dependencies.ctrlc]
+default-features = false
+features = ["nightly"]
+version = "1.0.0"
 
 [profile]
 

@@ -1,7 +1,7 @@
 use std::{cmp, ptr};
 
 use self::ApplyResult::*;
-use super::Leading::{self, Top, Bot};
+use self::Leading::*;
 
 #[allow(non_camel_case_types)]
 pub type blk = u64;
@@ -12,6 +12,20 @@ pub const BCNT_: usize = BCNT as usize;
 pub const VAL_BITS: u8 = BLK_BITS - 8;
 pub const VAL_MASK: blk = (1 << VAL_BITS) - 1;
 
+#[derive(Copy, Clone)]
+enum Leading {
+    Top,
+    Bot,
+}
+
+impl Leading {
+    pub fn switched(self) -> Leading {
+        match self {
+            Top => Bot,
+            Bot => Top,
+        }
+    }
+}
 
 #[derive(Copy, Clone)]
 pub struct SPart(blk);

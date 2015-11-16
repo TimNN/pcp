@@ -2,8 +2,12 @@ use alloc::{self, heap};
 use std::{mem, ops, ptr, slice};
 use std::ptr::Unique;
 
+use stats;
+
+pub const CHUNK_MB: usize = 64;
+
 const MB: usize = 1024 * 1024;
-const CHUNK_SIZE: usize = 64 * MB;
+const CHUNK_SIZE: usize = CHUNK_MB * MB;
 
 pub struct Chunk<T: Copy> {
     ptr: Unique<T>,
@@ -22,6 +26,8 @@ pub struct ChunkVec<T: Copy> {
 impl<T: Copy> Chunk<T> {
     fn new() -> Chunk<T> {
         assert!(mem::size_of::<T>() > 0, "zero sized types are not supported");
+
+        stats::chunk_allocated();
 
         unsafe {
             let ptr = heap::allocate(CHUNK_SIZE, mem::align_of::<T>());
@@ -66,6 +72,8 @@ impl<T: Copy> Chunk<T> {
 
 impl <T: Copy> Drop for Chunk<T> {
     fn drop(&mut self) {
+        stats::chunk_deallocated();
+
         unsafe {
             heap::deallocate(*self.ptr as *mut _, CHUNK_SIZE, mem::align_of::<T>());
         }
