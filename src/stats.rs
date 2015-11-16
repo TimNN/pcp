@@ -9,6 +9,8 @@ use solve::Node;
 use tabwriter::TabWriter;
 use time::{Duration, PreciseTime};
 
+const PRINT_INTERVAL: i64 = 1; // seconds
+
 static CHUNK_ALLOC_COUNT: AtomicUsize = ATOMIC_USIZE_INIT;
 static CHUNK_DEALLOC_COUNT: AtomicUsize = ATOMIC_USIZE_INIT;
 
@@ -34,6 +36,7 @@ pub fn pairs_successfully_applied(cnt: usize) {
 pub struct IterStats {
     timings: Vec<Duration>,
     iter_cnt: u32,
+    last_print: PreciseTime,
 }
 
 impl IterStats {
@@ -41,6 +44,7 @@ impl IterStats {
         IterStats {
             timings: vec![],
             iter_cnt: 0,
+            last_print: PreciseTime::now(),
         }
     }
 
@@ -48,7 +52,10 @@ impl IterStats {
         let start = PreciseTime::now();
         self.iter_cnt += 1;
 
-        println!("Now starting iteration {}", self.iter_cnt);
+        if self.last_print.to(start) >= Duration::seconds(PRINT_INTERVAL) {
+            println!("Now starting iteration {}", self.iter_cnt);
+            self.last_print = start;
+        }
 
         f();
 
