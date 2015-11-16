@@ -5,7 +5,7 @@ use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use chunk_vec::{Chunk, ChunkVec, ChunkWriter};
 use config::{Config, IPair};
 use pair::VPair;
-use stats::IterStats;
+use stats::{self, IterStats};
 use util::{MutexExt, PoolExt};
 
 use ctrlc::CtrlC;
@@ -21,11 +21,17 @@ pub fn solve(config: &Config) {
         stats.iter(|| {
             pool.execute_on_all(|| {
                 let mut writer = NodeWriter::new(&state);
+                let mut apply_cnt = 0;
+                let mut apply_success_cnt = 0;
 
                 for chunk in &state {
                     for node in &chunk {
                         for pair in &*config.pairs {
+                            apply_cnt += 1;
+
                             if let Some(new_node) = node.apply(&pair) {
+                                apply_success_cnt += 1;
+
                                 if new_node.pair.is_complete() {
                                     println!("success! n: {}, s: {}", new_node.depth, new_node.sum);
                                     iter.report_success();
@@ -36,6 +42,9 @@ pub fn solve(config: &Config) {
                         }
                     }
                 }
+
+                stats::pairs_applied(apply_cnt);
+                stats::pairs_successfully_applied(apply_success_cnt);
             })
         });
 

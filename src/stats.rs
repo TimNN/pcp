@@ -5,12 +5,23 @@ use time::{Duration, PreciseTime};
 static CHUNK_ALLOC_COUNT: AtomicUsize = ATOMIC_USIZE_INIT;
 static CHUNK_DEALLOC_COUNT: AtomicUsize = ATOMIC_USIZE_INIT;
 
+static PAIR_APPLY_COUNT: AtomicUsize = ATOMIC_USIZE_INIT;
+static PAIR_APPLY_SUCCESS_COUNT: AtomicUsize = ATOMIC_USIZE_INIT;
+
 pub fn chunk_allocated() {
     CHUNK_ALLOC_COUNT.fetch_add(1, Ordering::Relaxed);
 }
 
 pub fn chunk_deallocated() {
     CHUNK_DEALLOC_COUNT.fetch_add(1, Ordering::Relaxed);
+}
+
+pub fn pairs_applied(cnt: usize) {
+    PAIR_APPLY_COUNT.fetch_add(cnt, Ordering::Relaxed);
+}
+
+pub fn pairs_successfully_applied(cnt: usize) {
+    PAIR_APPLY_SUCCESS_COUNT.fetch_add(cnt, Ordering::Relaxed);
 }
 
 pub struct IterStats {
