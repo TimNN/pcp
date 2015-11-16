@@ -54,6 +54,8 @@ pub fn solve(config: &Config) {
     if !iter.is_success() {
         println!("no success");
     }
+
+    stats::print(config, iter.iter_count(), state.current_working_set.get_mut().unwrap(), stats);
 }
 
 struct SolveState {
@@ -73,7 +75,7 @@ struct NodeReader<'a> {
 }
 
 #[derive(Copy, Clone)]
-struct Node {
+pub struct Node {
     pair: VPair,
     sum: u16,
     depth: u16,
@@ -232,6 +234,10 @@ impl IterState {
         });
 
         state
+    }
+
+    fn iter_count(&self) -> usize {
+        self.iter_cnt.load(Ordering::Acquire)
     }
 
     fn report_success(&self) {

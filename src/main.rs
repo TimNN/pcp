@@ -8,6 +8,7 @@ extern crate ctrlc;
 extern crate libc;
 extern crate num_cpus;
 extern crate scoped_threadpool;
+extern crate tabwriter;
 extern crate time;
 
 use self::config::Config;

@@ -70,10 +70,6 @@ impl VPair {
         }
     }
 
-    pub fn len(&self) -> usize {
-        self.tail as usize + 1
-    }
-
     pub fn is_complete(&self) -> bool {
         self.tail == 0 && self.used == 0
     }
