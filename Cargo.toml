@@ -2,6 +2,14 @@
 authors = ["Tim Neumann <mail@timnn.me>"]
 name = "pcp"
 version = "0.1.0"
+description = "A brute-force pcp solution searcher"
+
+homepage = "https://github.com/TimNN/pcp"
+repository = "https://github.com/TimNN/pcp"
+
+readme = "README.md"
+
+license = "MIT"
 
 [dependencies]
 clap = "1.5.2"
