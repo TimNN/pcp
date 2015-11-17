@@ -139,3 +139,11 @@ impl<T: Copy> ops::Deref for Chunk<T> {
         }
     }
 }
+
+impl<T: Copy> ops::DerefMut for Chunk<T> {
+    fn deref_mut(&mut self) -> &mut [T] {
+        unsafe {
+            slice::from_raw_parts_mut(*self.ptr, self.used)
+        }
+    }
+}

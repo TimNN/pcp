@@ -76,9 +76,9 @@ struct NodeReader<'a> {
 
 #[derive(Copy, Clone)]
 pub struct Node {
-    pair: VPair,
-    sum: u16,
-    depth: u16,
+    pub pair: VPair,
+    pub sum: u16,
+    pub depth: u16,
 }
 
 struct IterState {

@@ -7,6 +7,7 @@ extern crate alloc;
 extern crate ctrlc;
 extern crate libc;
 extern crate num_cpus;
+extern crate quickersort;
 extern crate scoped_threadpool;
 extern crate tabwriter;
 extern crate time;

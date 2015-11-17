@@ -19,6 +19,7 @@ pub struct Config {
     pub pairs: Box<[IPair]>,
     pub max_iter: usize,
     pub thread_cnt: u32,
+    pub analyze: bool,
 }
 
 impl Config {
@@ -27,6 +28,7 @@ impl Config {
             (version: env!("CARGO_PKG_VERSION"))
             (author: "Tim Neumann <mail@timnn.me>")
             (about: "A brute-force pcp solution searcher")
+            (@arg analyze: -a "Perform a more extensive analysis of the last working set")
             (@arg max_iter: -n +takes_value "The maximum number of iterations to perform")
             (@arg file: -f +takes_value "Read the problem from the specified file instead of stdin")
         ).get_matches();
@@ -45,6 +47,7 @@ impl Config {
             pairs: pairs,
             max_iter: max_iter,
             thread_cnt: num_cpus::get() as u32,
+            analyze: matches.is_present("analyze"),
         }
     }
 

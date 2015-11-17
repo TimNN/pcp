@@ -5,7 +5,11 @@ use std::sync::atomic::{AtomicUsize, ATOMIC_USIZE_INIT, Ordering};
 use chunk_vec::{Chunk, CHUNK_MB};
 use config::Config;
 use solve::Node;
+use util::OrderingExt;
+use util::PoolExt;
 
+use quickersort;
+use scoped_threadpool::Pool;
 use tabwriter::TabWriter;
 use time::{Duration, PreciseTime};
 
@@ -88,7 +92,12 @@ macro_rules! stats {
     }}
 }
 
-pub fn print(_config: &Config, iter_cnt: usize, _chunks: &[Chunk<Node>], stats: IterStats) {
+pub fn print(config: &Config, iter_cnt: usize, chunks: &mut [Chunk<Node>], stats: IterStats) {
+    if config.analyze {
+        println!("Extended analysis requested.");
+        analyze(config, chunks);
+    }
+
     let iter_duration = stats.iter_duration();
 
     stats! {
@@ -99,11 +108,11 @@ pub fn print(_config: &Config, iter_cnt: usize, _chunks: &[Chunk<Node>], stats: 
         ("chunks deallocated", CHUNK_DEALLOC_COUNT.load(Ordering::Acquire), "{:5}")
         ("chunks total memory", CHUNK_MB as f64 * CHUNK_ALLOC_COUNT.load(Ordering::Acquire) as f64 / 1024f64, "{:5.1} GB")
 
-        ("chunks in current working set", _chunks.len(), "{:5}")
+        ("chunks in current working set", chunks.len(), "{:5}")
         ("pairs applied", pretty_high_str(PAIR_APPLY_COUNT.load(Ordering::Acquire) as f64))
         ("pairs applied successfully", pretty_high_str(PAIR_APPLY_SUCCESS_COUNT.load(Ordering::Acquire) as f64))
 
-        ("number of iterations", iter_cnt, "{:5}")
+        ("number of iterations", iter_cnt - 1, "{:5}")
         ("total iteration time", iter_duration.num_milliseconds() as f64 / 1000f64, "{:5.1} seconds")
         ("operations", pretty_high_str(PAIR_APPLY_COUNT.load(Ordering::Acquire) as f64 / iter_duration.num_milliseconds() as f64), "{} ops/ms")
     }
@@ -121,4 +130,21 @@ fn pretty_high(mut f: f64) -> (f64, &'static str) {
     }
 
     return (f, "e15");
+}
+
+fn analyze(config: &Config, chunks: &mut [Chunk<Node>]) {
+    let mut pool = Pool::new(config.thread_cnt);
+
+    println!("Now sorting chunks.");
+
+    pool.process_each(chunks.iter_mut(), |chunk| {
+        quickersort::sort_by(chunk, &|a, b| {
+            let a = &a.pair;
+            let b = &b.pair;
+
+            a.leading().cmp(&b.leading()).then(|| a.len().cmp(&b.len()))
+        })
+    });
+
+    println!("Sorting done!");
 }

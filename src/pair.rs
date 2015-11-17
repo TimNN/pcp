@@ -12,7 +12,7 @@ pub const BCNT_: usize = BCNT as usize;
 pub const VAL_BITS: u8 = BLK_BITS - 8;
 pub const VAL_MASK: blk = (1 << VAL_BITS) - 1;
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 enum Leading {
     Top,
     Bot,
@@ -96,6 +96,18 @@ impl VPair {
                     MatchRemaining => unreachable!("SPairs contain at most VAL_BITS bit, which always fit in BITS bit"),
                 }
             }
+        }
+    }
+
+    pub fn leading(&self) -> Leading {
+        self.leading
+    }
+
+    pub fn len(&self) -> u32 {
+        if self.tail == 0 {
+            (self.used - self.prefix) as u32
+        } else {
+            (self.tail as u32 - 1) * BLK_BITS as u32 + (BLK_BITS - self.prefix) as u32 + self.used as u32
         }
     }
 

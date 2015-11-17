@@ -2,6 +2,7 @@ use libc;
 
 use scoped_threadpool::Pool;
 
+use std::cmp::Ordering;
 use std::sync::PoisonError;
 use std::sync::{Mutex, MutexGuard};
 
@@ -25,6 +26,8 @@ impl<T> MutexExt for Mutex<T> {
 
 pub trait PoolExt {
     fn execute_on_all<F: Fn() + Send + Sync>(&mut self, f: F);
+
+    fn process_each<T: Send, I: IntoIterator<Item=T>, F: Fn(T) + Send + Sync>(&mut self, i: I, f: F);
 }
 
 impl PoolExt for Pool {
@@ -36,5 +39,26 @@ impl PoolExt for Pool {
                 scope.execute(&f);
             }
         })
+    }
+
+    fn process_each<T: Send, I: IntoIterator<Item=T>, F: Fn(T) + Send + Sync>(&mut self, i: I, f: F) {
+        self.scoped(|scope| {
+            for v in i {
+                scope.execute(|| f(v))
+            }
+        })
+    }
+}
+
+pub trait OrderingExt {
+    fn then<F: FnOnce() -> Ordering>(self, f: F) -> Ordering;
+}
+
+impl OrderingExt for Ordering {
+    fn then<F: FnOnce() -> Ordering>(self, f: F) -> Ordering {
+        match self {
+            Ordering::Equal => f(),
+            _ => self,
+        }
     }
 }
