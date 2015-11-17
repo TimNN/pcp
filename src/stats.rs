@@ -1,4 +1,4 @@
-use std::ops;
+use std::{cmp, ops};
 use std::io::{self, Write};
 use std::sync::atomic::{AtomicUsize, ATOMIC_USIZE_INIT, Ordering};
 
@@ -138,13 +138,18 @@ fn analyze(config: &Config, chunks: &mut [Chunk<Node>]) {
     println!("Now sorting chunks.");
 
     pool.process_each(chunks.iter_mut(), |chunk| {
-        quickersort::sort_by(chunk, &|a, b| {
-            let a = &a.pair;
-            let b = &b.pair;
-
-            a.leading().cmp(&b.leading()).then(|| a.len().cmp(&b.len()))
-        })
+        quickersort::sort_by(chunk, &cmp_nodes)
     });
 
     println!("Sorting done!");
+}
+
+
+fn cmp_nodes(a: &Node, b: &Node) -> cmp::Ordering {
+    let a = &a.pair;
+    let b = &b.pair;
+
+    cmp::Ordering::Equal
+        .then(|| a.leading().cmp(&b.leading()))
+        .then(|| a.len().cmp(&b.len()))
 }
