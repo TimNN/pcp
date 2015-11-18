@@ -20,7 +20,7 @@
 //!
 //! This is a larger example that implements [Dijkstra's algorithm][dijkstra]
 //! to solve the [shortest path problem][sssp] on a [directed graph][dir_graph].
-//! It shows how to use `BinaryHeap` with custom types.
+//! It shows how to use `BinaryHeapBy` with custom types.
 //!
 //! [dijkstra]: http://en.wikipedia.org/wiki/Dijkstra%27s_algorithm
 //! [sssp]: http://en.wikipedia.org/wiki/Shortest_path_problem
@@ -28,7 +28,7 @@
 //!
 //! ```
 //! use std::cmp::Ordering;
-//! use std::collections::BinaryHeap;
+//! use std::collections::BinaryHeapBy;
 //! use std::usize;
 //!
 //! #[derive(Copy, Clone, Eq, PartialEq)]
@@ -70,7 +70,7 @@
 //!     // dist[node] = current shortest distance from `start` to `node`
 //!     let mut dist: Vec<_> = (0..adj_list.len()).map(|_| usize::MAX).collect();
 //!
-//!     let mut heap = BinaryHeap::new();
+//!     let mut heap = BinaryHeapBy::new();
 //!
 //!     // We're at `start`, with a zero cost
 //!     dist[start] = 0;
@@ -164,13 +164,13 @@ use std::vec::{self, Vec};
 /// item's ordering relative to any other item, as determined by the `Ord`
 /// trait, changes while it is in the heap. This is normally only possible
 /// through `Cell`, `RefCell`, global state, I/O, or unsafe code.
-pub struct BinaryHeap<T> {
+pub struct BinaryHeapBy<T> {
     data: Vec<T>,
 }
 
-impl<T: Clone> Clone for BinaryHeap<T> {
+impl<T: Clone> Clone for BinaryHeapBy<T> {
     fn clone(&self) -> Self {
-        BinaryHeap { data: self.data.clone() }
+        BinaryHeapBy { data: self.data.clone() }
     }
 
     fn clone_from(&mut self, source: &Self) {
@@ -178,43 +178,43 @@ impl<T: Clone> Clone for BinaryHeap<T> {
     }
 }
 
-impl<T: Ord> Default for BinaryHeap<T> {
+impl<T: Ord> Default for BinaryHeapBy<T> {
     #[inline]
-    fn default() -> BinaryHeap<T> { BinaryHeap::new() }
+    fn default() -> BinaryHeapBy<T> { BinaryHeapBy::new() }
 }
 
-impl<T: fmt::Debug + Ord> fmt::Debug for BinaryHeap<T> {
+impl<T: fmt::Debug + Ord> fmt::Debug for BinaryHeapBy<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_list().entries(self.iter()).finish()
     }
 }
 
-impl<T: Ord> BinaryHeap<T> {
-    /// Creates an empty `BinaryHeap` as a max-heap.
+impl<T: Ord> BinaryHeapBy<T> {
+    /// Creates an empty `BinaryHeapBy` as a max-heap.
     ///
     /// # Examples
     ///
     /// ```
-    /// use std::collections::BinaryHeap;
-    /// let mut heap = BinaryHeap::new();
+    /// use std::collections::BinaryHeapBy;
+    /// let mut heap = BinaryHeapBy::new();
     /// heap.push(4);
     /// ```
-    pub fn new() -> BinaryHeap<T> { BinaryHeap { data: vec![] } }
+    pub fn new() -> BinaryHeapBy<T> { BinaryHeapBy { data: vec![] } }
 
-    /// Creates an empty `BinaryHeap` with a specific capacity.
+    /// Creates an empty `BinaryHeapBy` with a specific capacity.
     /// This preallocates enough memory for `capacity` elements,
-    /// so that the `BinaryHeap` does not have to be reallocated
+    /// so that the `BinaryHeapBy` does not have to be reallocated
     /// until it contains at least that many values.
     ///
     /// # Examples
     ///
     /// ```
-    /// use std::collections::BinaryHeap;
-    /// let mut heap = BinaryHeap::with_capacity(10);
+    /// use std::collections::BinaryHeapBy;
+    /// let mut heap = BinaryHeapBy::with_capacity(10);
     /// heap.push(4);
     /// ```
-    pub fn with_capacity(capacity: usize) -> BinaryHeap<T> {
-        BinaryHeap { data: Vec::with_capacity(capacity) }
+    pub fn with_capacity(capacity: usize) -> BinaryHeapBy<T> {
+        BinaryHeapBy { data: Vec::with_capacity(capacity) }
     }
 
     /// Returns an iterator visiting all values in the underlying vector, in
@@ -223,8 +223,8 @@ impl<T: Ord> BinaryHeap<T> {
     /// # Examples
     ///
     /// ```
-    /// use std::collections::BinaryHeap;
-    /// let heap = BinaryHeap::from(vec![1, 2, 3, 4]);
+    /// use std::collections::BinaryHeapBy;
+    /// let heap = BinaryHeapBy::from(vec![1, 2, 3, 4]);
     ///
     /// // Print 1, 2, 3, 4 in arbitrary order
     /// for x in heap.iter() {
@@ -240,8 +240,8 @@ impl<T: Ord> BinaryHeap<T> {
     /// # Examples
     ///
     /// ```
-    /// use std::collections::BinaryHeap;
-    /// let mut heap = BinaryHeap::new();
+    /// use std::collections::BinaryHeapBy;
+    /// let mut heap = BinaryHeapBy::new();
     /// assert_eq!(heap.peek(), None);
     ///
     /// heap.push(1);
@@ -259,15 +259,15 @@ impl<T: Ord> BinaryHeap<T> {
     /// # Examples
     ///
     /// ```
-    /// use std::collections::BinaryHeap;
-    /// let mut heap = BinaryHeap::with_capacity(100);
+    /// use std::collections::BinaryHeapBy;
+    /// let mut heap = BinaryHeapBy::with_capacity(100);
     /// assert!(heap.capacity() >= 100);
     /// heap.push(4);
     /// ```
     pub fn capacity(&self) -> usize { self.data.capacity() }
 
     /// Reserves the minimum capacity for exactly `additional` more elements to be inserted in the
-    /// given `BinaryHeap`. Does nothing if the capacity is already sufficient.
+    /// given `BinaryHeapBy`. Does nothing if the capacity is already sufficient.
     ///
     /// Note that the allocator may give the collection more space than it requests. Therefore
     /// capacity can not be relied upon to be precisely minimal. Prefer `reserve` if future
@@ -280,8 +280,8 @@ impl<T: Ord> BinaryHeap<T> {
     /// # Examples
     ///
     /// ```
-    /// use std::collections::BinaryHeap;
-    /// let mut heap = BinaryHeap::new();
+    /// use std::collections::BinaryHeapBy;
+    /// let mut heap = BinaryHeapBy::new();
     /// heap.reserve_exact(100);
     /// assert!(heap.capacity() >= 100);
     /// heap.push(4);
@@ -291,7 +291,7 @@ impl<T: Ord> BinaryHeap<T> {
     }
 
     /// Reserves capacity for at least `additional` more elements to be inserted in the
-    /// `BinaryHeap`. The collection may reserve more space to avoid frequent reallocations.
+    /// `BinaryHeapBy`. The collection may reserve more space to avoid frequent reallocations.
     ///
     /// # Panics
     ///
@@ -300,8 +300,8 @@ impl<T: Ord> BinaryHeap<T> {
     /// # Examples
     ///
     /// ```
-    /// use std::collections::BinaryHeap;
-    /// let mut heap = BinaryHeap::new();
+    /// use std::collections::BinaryHeapBy;
+    /// let mut heap = BinaryHeapBy::new();
     /// heap.reserve(100);
     /// assert!(heap.capacity() >= 100);
     /// heap.push(4);
@@ -321,8 +321,8 @@ impl<T: Ord> BinaryHeap<T> {
     /// # Examples
     ///
     /// ```
-    /// use std::collections::BinaryHeap;
-    /// let mut heap = BinaryHeap::from(vec![1, 3]);
+    /// use std::collections::BinaryHeapBy;
+    /// let mut heap = BinaryHeapBy::from(vec![1, 3]);
     ///
     /// assert_eq!(heap.pop(), Some(3));
     /// assert_eq!(heap.pop(), Some(1));
@@ -343,8 +343,8 @@ impl<T: Ord> BinaryHeap<T> {
     /// # Examples
     ///
     /// ```
-    /// use std::collections::BinaryHeap;
-    /// let mut heap = BinaryHeap::new();
+    /// use std::collections::BinaryHeapBy;
+    /// let mut heap = BinaryHeapBy::new();
     /// heap.push(3);
     /// heap.push(5);
     /// heap.push(1);
@@ -366,8 +366,8 @@ impl<T: Ord> BinaryHeap<T> {
     /// ```
     /// #![feature(binary_heap_extras)]
     ///
-    /// use std::collections::BinaryHeap;
-    /// let mut heap = BinaryHeap::new();
+    /// use std::collections::BinaryHeapBy;
+    /// let mut heap = BinaryHeapBy::new();
     /// heap.push(1);
     /// heap.push(5);
     ///
@@ -399,8 +399,8 @@ impl<T: Ord> BinaryHeap<T> {
     /// ```
     /// #![feature(binary_heap_extras)]
     ///
-    /// use std::collections::BinaryHeap;
-    /// let mut heap = BinaryHeap::new();
+    /// use std::collections::BinaryHeapBy;
+    /// let mut heap = BinaryHeapBy::new();
     ///
     /// assert_eq!(heap.replace(1), None);
     /// assert_eq!(heap.replace(3), Some(1));
@@ -418,14 +418,14 @@ impl<T: Ord> BinaryHeap<T> {
         }
     }
 
-    /// Consumes the `BinaryHeap` and returns the underlying vector
+    /// Consumes the `BinaryHeapBy` and returns the underlying vector
     /// in arbitrary order.
     ///
     /// # Examples
     ///
     /// ```
-    /// use std::collections::BinaryHeap;
-    /// let heap = BinaryHeap::from(vec![1, 2, 3, 4, 5, 6, 7]);
+    /// use std::collections::BinaryHeapBy;
+    /// let heap = BinaryHeapBy::from(vec![1, 2, 3, 4, 5, 6, 7]);
     /// let vec = heap.into_vec();
     ///
     /// // Will print in some order
@@ -437,15 +437,15 @@ impl<T: Ord> BinaryHeap<T> {
         self.into()
     }
 
-    /// Consumes the `BinaryHeap` and returns a vector in sorted
+    /// Consumes the `BinaryHeapBy` and returns a vector in sorted
     /// (ascending) order.
     ///
     /// # Examples
     ///
     /// ```
-    /// use std::collections::BinaryHeap;
+    /// use std::collections::BinaryHeapBy;
     ///
-    /// let mut heap = BinaryHeap::from(vec![1, 2, 4, 5, 7]);
+    /// let mut heap = BinaryHeapBy::from(vec![1, 2, 4, 5, 7]);
     /// heap.push(6);
     /// heap.push(3);
     ///
@@ -593,7 +593,7 @@ impl<'a, T> Drop for Hole<'a, T> {
     }
 }
 
-/// `BinaryHeap` iterator.
+/// `BinaryHeapBy` iterator.
 pub struct Iter <'a, T: 'a> {
     iter: slice::Iter<'a, T>,
 }
@@ -622,7 +622,7 @@ impl<'a, T> DoubleEndedIterator for Iter<'a, T> {
 
 impl<'a, T> ExactSizeIterator for Iter<'a, T> {}
 
-/// An iterator that moves out of a `BinaryHeap`.
+/// An iterator that moves out of a `BinaryHeapBy`.
 pub struct IntoIter<T> {
     iter: vec::IntoIter<T>,
 }
@@ -644,7 +644,7 @@ impl<T> DoubleEndedIterator for IntoIter<T> {
 
 impl<T> ExactSizeIterator for IntoIter<T> {}
 
-/// An iterator that drains a `BinaryHeap`.
+/// An iterator that drains a `BinaryHeapBy`.
 pub struct Drain<'a, T: 'a> {
     iter: vec::Drain<'a, T>,
 }
@@ -666,9 +666,9 @@ impl<'a, T: 'a> DoubleEndedIterator for Drain<'a, T> {
 
 impl<'a, T: 'a> ExactSizeIterator for Drain<'a, T> {}
 
-impl<T: Ord> From<Vec<T>> for BinaryHeap<T> {
-    fn from(vec: Vec<T>) -> BinaryHeap<T> {
-        let mut heap = BinaryHeap { data: vec };
+impl<T: Ord> From<Vec<T>> for BinaryHeapBy<T> {
+    fn from(vec: Vec<T>) -> BinaryHeapBy<T> {
+        let mut heap = BinaryHeapBy { data: vec };
         let mut n = heap.len() / 2;
         while n > 0 {
             n -= 1;
@@ -678,19 +678,19 @@ impl<T: Ord> From<Vec<T>> for BinaryHeap<T> {
     }
 }
 
-impl<T> Into<Vec<T>> for BinaryHeap<T> {
+impl<T> Into<Vec<T>> for BinaryHeapBy<T> {
     fn into(self) -> Vec<T> {
         self.data
     }
 }
 
-impl<T: Ord> FromIterator<T> for BinaryHeap<T> {
-    fn from_iter<I: IntoIterator<Item=T>>(iter: I) -> BinaryHeap<T> {
-        BinaryHeap::from(iter.into_iter().collect::<Vec<_>>())
+impl<T: Ord> FromIterator<T> for BinaryHeapBy<T> {
+    fn from_iter<I: IntoIterator<Item=T>>(iter: I) -> BinaryHeapBy<T> {
+        BinaryHeapBy::from(iter.into_iter().collect::<Vec<_>>())
     }
 }
 
-impl<T: Ord> IntoIterator for BinaryHeap<T> {
+impl<T: Ord> IntoIterator for BinaryHeapBy<T> {
     type Item = T;
     type IntoIter = IntoIter<T>;
 
@@ -701,8 +701,8 @@ impl<T: Ord> IntoIterator for BinaryHeap<T> {
     /// # Examples
     ///
     /// ```
-    /// use std::collections::BinaryHeap;
-    /// let heap = BinaryHeap::from(vec![1, 2, 3, 4]);
+    /// use std::collections::BinaryHeapBy;
+    /// let heap = BinaryHeapBy::from(vec![1, 2, 3, 4]);
     ///
     /// // Print 1, 2, 3, 4 in arbitrary order
     /// for x in heap.into_iter() {
@@ -715,7 +715,7 @@ impl<T: Ord> IntoIterator for BinaryHeap<T> {
     }
 }
 
-impl<'a, T> IntoIterator for &'a BinaryHeap<T> where T: Ord {
+impl<'a, T> IntoIterator for &'a BinaryHeapBy<T> where T: Ord {
     type Item = &'a T;
     type IntoIter = Iter<'a, T>;
 
@@ -724,7 +724,7 @@ impl<'a, T> IntoIterator for &'a BinaryHeap<T> where T: Ord {
     }
 }
 
-impl<T: Ord> Extend<T> for BinaryHeap<T> {
+impl<T: Ord> Extend<T> for BinaryHeapBy<T> {
     fn extend<I: IntoIterator<Item=T>>(&mut self, iterable: I) {
         let iter = iterable.into_iter();
         let (lower, _) = iter.size_hint();
@@ -737,7 +737,7 @@ impl<T: Ord> Extend<T> for BinaryHeap<T> {
     }
 }
 
-impl<'a, T: 'a + Ord + Copy> Extend<&'a T> for BinaryHeap<T> {
+impl<'a, T: 'a + Ord + Copy> Extend<&'a T> for BinaryHeapBy<T> {
     fn extend<I: IntoIterator<Item=&'a T>>(&mut self, iter: I) {
         self.extend(iter.into_iter().cloned());
     }
