@@ -1,4 +1,4 @@
-#![feature(alloc, filling_drop, heap_api, mutex_get_mut, oom, unique)]
+#![feature(alloc, drain, filling_drop, heap_api, mutex_get_mut, oom, unique)]
 
 #[macro_use]
 extern crate clap;
@@ -15,6 +15,7 @@ extern crate time;
 use self::config::Config;
 use solve::solve;
 
+mod binary_heap_by;
 mod chunk_vec;
 mod config;
 mod pair;
