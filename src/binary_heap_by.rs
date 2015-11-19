@@ -151,12 +151,25 @@
 use std::cmp::Ordering;
 
 use std::iter::{FromIterator};
+use std::marker::PhantomData;
 use std::mem::swap;
 use std::ptr;
 use std::fmt;
 
 use std::slice;
 use std::vec::{self, Vec};
+
+pub trait CmpFn<T> {
+    fn cmp(&T, &T) -> Ordering;
+}
+
+pub struct OrdCmpFn;
+
+impl<T: Ord> CmpFn<T> for OrdCmpFn {
+    fn cmp(a: &T, b: &T) -> Ordering {
+        a.cmp(b)
+    }
+}
 
 /// A priority queue implemented with a binary heap.
 ///
@@ -166,40 +179,45 @@ use std::vec::{self, Vec};
 /// item's ordering relative to any other item, as determined by the `Ord`
 /// trait, changes while it is in the heap. This is normally only possible
 /// through `Cell`, `RefCell`, global state, I/O, or unsafe code.
-pub struct BinaryHeapBy<T, F: Fn(&T, &T) -> Ordering> {
-    cmp: F,
+pub struct BinaryHeapBy<T, F: CmpFn<T> = OrdCmpFn> {
     data: Vec<T>,
+    _cmp: PhantomData<F>,
 }
 
-impl<T: Clone, F: Clone + Fn(&T, &T) -> Ordering> Clone for BinaryHeapBy<T, F> {
+impl<T: Clone, F: CmpFn<T>> Clone for BinaryHeapBy<T, F> {
     fn clone(&self) -> Self {
-        BinaryHeapBy { cmp: self.cmp.clone(), data: self.data.clone() }
+        BinaryHeapBy { _cmp: PhantomData, data: self.data.clone() }
     }
 
     fn clone_from(&mut self, source: &Self) {
-        self.cmp.clone_from(&source.cmp);
         self.data.clone_from(&source.data);
     }
 }
 
-impl<T: fmt::Debug, F: Fn(&T, &T) -> Ordering> fmt::Debug for BinaryHeapBy<T, F> {
+impl<T: fmt::Debug, F: CmpFn<T>> fmt::Debug for BinaryHeapBy<T, F> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_list().entries(self.iter()).finish()
     }
 }
 
-impl<T, F: Fn(&T, &T) -> Ordering> BinaryHeapBy<T, F> {
-    pub fn new_by(cmp: F) -> BinaryHeapBy<T, F> {
+impl<T: Ord> BinaryHeapBy<T, OrdCmpFn> {
+    fn new() -> BinaryHeapBy<T, OrdCmpFn> {
+        BinaryHeapBy::new_by()
+    }
+}
+
+impl<T, F: CmpFn<T>> BinaryHeapBy<T, F> {
+    pub fn new_by() -> BinaryHeapBy<T, F> {
         BinaryHeapBy {
-            cmp: cmp,
             data: vec![],
+            _cmp: PhantomData,
         }
     }
 
-    pub fn with_capacity_by(capacity: usize, cmp: F) -> BinaryHeapBy<T, F> {
+    pub fn with_capacity_by(capacity: usize) -> BinaryHeapBy<T, F> {
         BinaryHeapBy {
-            cmp: cmp,
             data: Vec::with_capacity(capacity),
+            _cmp: PhantomData,
         }
     }
 
@@ -367,7 +385,7 @@ impl<T, F: Fn(&T, &T) -> Ordering> BinaryHeapBy<T, F> {
 
         match self.data.get_mut(0) {
             None => return item,
-            Some(top) => if Greater == (self.cmp)(top, &item) {
+            Some(top) => if Greater == F::cmp(top, &item) {
                 swap(&mut item, top);
             } else {
                 return item;
@@ -467,7 +485,7 @@ impl<T, F: Fn(&T, &T) -> Ordering> BinaryHeapBy<T, F> {
 
             while hole.pos() > start {
                 let parent = (hole.pos() - 1) / 2;
-                if Greater != (self.cmp)(hole.element(), hole.get(parent)) { break; }
+                if Greater != F::cmp(hole.element(), hole.get(parent)) { break; }
                 hole.move_to(parent);
             }
         }
@@ -484,11 +502,11 @@ impl<T, F: Fn(&T, &T) -> Ordering> BinaryHeapBy<T, F> {
             while child < end {
                 let right = child + 1;
                 // compare with the greater of the two children
-                if right < end && !(Greater == (self.cmp)(hole.get(child), hole.get(right))) {
+                if right < end && !(Greater == F::cmp(hole.get(child), hole.get(right))) {
                     child = right;
                 }
                 // if we are already in order, stop.
-                if Less != (self.cmp)(hole.element(), hole.get(child)) { break; }
+                if Less != F::cmp(hole.element(), hole.get(child)) { break; }
                 hole.move_to(child);
                 child = 2 * hole.pos() + 1;
             }
@@ -658,13 +676,13 @@ impl<'a, T: 'a> DoubleEndedIterator for Drain<'a, T> {
 
 impl<'a, T: 'a> ExactSizeIterator for Drain<'a, T> {}
 
-impl<T, F: Fn(&T, &T) -> Ordering> Into<Vec<T>> for BinaryHeapBy<T, F> {
+impl<T, F: CmpFn<T>> Into<Vec<T>> for BinaryHeapBy<T, F> {
     fn into(self) -> Vec<T> {
         self.data
     }
 }
 
-impl<T, F: Fn(&T, &T) -> Ordering> IntoIterator for BinaryHeapBy<T, F> {
+impl<T, F: CmpFn<T>> IntoIterator for BinaryHeapBy<T, F> {
     type Item = T;
     type IntoIter = IntoIter<T>;
 
@@ -689,7 +707,7 @@ impl<T, F: Fn(&T, &T) -> Ordering> IntoIterator for BinaryHeapBy<T, F> {
     }
 }
 
-impl<'a, T, F: Fn(&T, &T) -> Ordering> IntoIterator for &'a BinaryHeapBy<T, F> {
+impl<'a, T, F: CmpFn<T>> IntoIterator for &'a BinaryHeapBy<T, F> {
     type Item = &'a T;
     type IntoIter = Iter<'a, T>;
 
@@ -698,7 +716,7 @@ impl<'a, T, F: Fn(&T, &T) -> Ordering> IntoIterator for &'a BinaryHeapBy<T, F> {
     }
 }
 
-impl<T, F: Fn(&T, &T) -> Ordering> Extend<T> for BinaryHeapBy<T, F> {
+impl<T, F: CmpFn<T>> Extend<T> for BinaryHeapBy<T, F> {
     fn extend<I: IntoIterator<Item=T>>(&mut self, iterable: I) {
         let iter = iterable.into_iter();
         let (lower, _) = iter.size_hint();
@@ -711,7 +729,7 @@ impl<T, F: Fn(&T, &T) -> Ordering> Extend<T> for BinaryHeapBy<T, F> {
     }
 }
 
-impl<'a, T: 'a + Copy, F: Fn(&T, &T) -> Ordering> Extend<&'a T> for BinaryHeapBy<T, F> {
+impl<'a, T: 'a + Copy, F: CmpFn<T>> Extend<&'a T> for BinaryHeapBy<T, F> {
     fn extend<I: IntoIterator<Item=&'a T>>(&mut self, iter: I) {
         self.extend(iter.into_iter().cloned());
     }
