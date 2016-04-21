@@ -13,7 +13,7 @@ pub const VAL_BITS: u8 = BLK_BITS - 8;
 pub const VAL_MASK: blk = (1 << VAL_BITS) - 1;
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
-enum Leading {
+pub enum Leading {
     Top,
     Bot,
 }

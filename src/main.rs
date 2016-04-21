@@ -1,4 +1,4 @@
-#![feature(alloc, drain, filling_drop, heap_api, mutex_get_mut, oom, unique)]
+#![feature(alloc, filling_drop, heap_api, oom, unique)]
 
 #[macro_use]
 extern crate clap;

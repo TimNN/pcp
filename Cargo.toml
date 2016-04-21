@@ -13,7 +13,7 @@ license = "MIT"
 
 [dependencies]
 clap = "1.5.2"
-ctrlc = { version = "1.0.0", features = ["nightly"], default-features = false }
+ctrlc = "1.0.0"
 libc = "0.2.2"
 num_cpus = "0.2.7"
 quickersort = "1.0.0"
