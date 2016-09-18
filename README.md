@@ -2,11 +2,11 @@
 
 A rust implementation of a brute-force pcp solution searcher. A problem is read from standard input or a file specified on the command line (see [Usage](#usage) for more details).
 
-A problem file consists of any number of (utf-8 encoded) lines, each non-empty line representing a pair of words, consisting of two whitespace-separated fields, each of which denotes one word of the pair. 
+A problem file consists of any number of (utf-8 encoded) lines, each non-empty line representing a pair of words, consisting of two whitespace-separated fields, each of which denotes one word of the pair.
 
 Words may consist of any number of non-whitespace unicode characters, each unique character will be replaced by a unique fixed-width bit pattern. The total number of bits per word must not exceed 56.
 
-See the `*.pcp` files in the root directory for example problem specifications. The `wiki*.pcp` files were taken from the [german wikipedia](https://de.wikipedia.org/wiki/Postsches_Korrespondenzproblem), `homework.pcp` was taken from an exercise of my theoretical computer science class.
+See the `*.pcp` files in the root directory for example problem specifications. The `wiki*.pcp` files were taken from the [german wikipedia](https://de.wikipedia.org/wiki/Postsches_Korrespondenzproblem), ~~`homework.pcp` was taken from an exercise of my theoretical computer science class~~ (`homework.pcp` has been since first publishing this repo removed).
 
 ## Usage
 
