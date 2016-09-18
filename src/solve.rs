@@ -163,7 +163,10 @@ impl<'a> NodeWriter<'a> {
 impl<'a> Drop for NodeWriter<'a> {
     fn drop(&mut self) {
         unsafe {
-            let mut tmp = mem::dropped();
+            // this is really hacky, was the minimal fix after we got non-zeroing drop
+            // and only work because the only think with a destructor (`Chunks`) bails
+            // out if it has been zeroed.
+            let mut tmp = mem::zeroed();;
             mem::swap(&mut tmp, &mut self.inner);
             self.state.push(tmp.into());
         }
@@ -182,7 +185,10 @@ impl<'a> NodeReader<'a> {
 impl<'a> Drop for NodeReader<'a> {
     fn drop(&mut self) {
         unsafe {
-            let mut tmp = mem::dropped();
+            // this is really hacky, was the minimal fix after we got non-zeroing drop
+            // and only work because the only think with a destructor (`Chunks`) bails
+            // out if it has been zeroed.
+            let mut tmp = mem::zeroed();
             mem::swap(&mut tmp, &mut self.inner);
             self.state.offer(tmp);
         }

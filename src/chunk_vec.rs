@@ -72,6 +72,10 @@ impl<T: Copy> Chunk<T> {
 
 impl <T: Copy> Drop for Chunk<T> {
     fn drop(&mut self) {
+        if *self.ptr as *const _ == ptr::null() {
+            return;
+        }
+
         stats::chunk_deallocated();
 
         unsafe {
