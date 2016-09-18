@@ -1,7 +1,7 @@
 [package]
 authors = ["Tim Neumann <mail@timnn.me>"]
 name = "pcp"
-version = "0.1.0"
+version = "0.2.0"
 description = "A brute-force pcp solution searcher"
 
 homepage = "https://github.com/TimNN/pcp"
